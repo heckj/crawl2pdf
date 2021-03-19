@@ -5,6 +5,7 @@ const yargs = require('yargs');
 const fs = require('fs');
 
 const seenURLs = new Set()
+const failedURLs = new Set()
 var startHost = ""
 var startPathname = ""
 const argv = yargs
@@ -38,11 +39,10 @@ const crawl = async (url, page) => {
     if (seenURLs.has(url)) {
         return
     }
-    seenURLs.add(url)
     // constrain the spidering to the URLs at the starting location or below...
     const parsedURL = new NODEURL.URL(url)
     if (!(parsedURL.host == startHost && parsedURL.pathname.startsWith(startPathname))) {
-        // console.log(" - skipping ", parsedURL.href)
+        console.log(" - skipping ", parsedURL.href)
         return
     }
     try {
@@ -50,9 +50,12 @@ const crawl = async (url, page) => {
         // https://playwright.dev/docs/api/class-page#pagesetdefaultnavigationtimeouttimeout
         // https://playwright.dev/docs/api/class-page#pagegotourl-options
         await page.goto(url, {timeout: 45000, waitUntil: 'networkidle'})
-        // await page.waitForLoadState('networkidle');    
+        // await page.waitForLoadState('networkidle');
+        seenURLs.add(url)
     } catch (err) {
         console.log(` * Unable to load ${url} within timeout of 45 sec, moving on`)
+        failedURLs.add(url)
+        return
     }
     // NOTE(heckj): Topic pages have a 'div.doc-topic' and within that a 'div.topictitle'
     if (argv.a) {
@@ -100,6 +103,11 @@ const crawl = async (url, page) => {
             
             console.log("Crawling starting from ", startURL.href)
             await crawl(startURL.href, page)
+            // Make another round through any URLs that fell through the cracks
+            // due to timeouts
+            for await (const tryAgainUrl of failedURLs) {
+                await crawl(tryAgainUrl, page)
+            }
             console.log(`Checked ${seenURLs.size} URLs`)    
         } else {
             yargs.showHelp()
@@ -112,14 +120,32 @@ const crawl = async (url, page) => {
             const lines = data.split(/\r?\n/);
             for (let index = 0; index < lines.length; index++) {
                 if (lines[index]) {
-                    console.log("rendering ", lines[index])
-                    await render(lines[index], page)    
+                    try {
+                        console.log(` + Visiting ${url}`)
+                        // https://playwright.dev/docs/api/class-page#pagesetdefaultnavigationtimeouttimeout
+                        // https://playwright.dev/docs/api/class-page#pagegotourl-options
+                        await page.goto(url, {timeout: 45000, waitUntil: 'networkidle'})
+                        console.log("rendering ", lines[index])
+                        await render(lines[index], page)    
+                    } catch (err) {
+                        console.log(` * Unable to load ${url} within timeout of 45 sec, moving on`)
+                        failedURLs.add(url)
+                    }
                 }
             }
         } else if (argv.u) {
             // -u or --url option included - use the URL from the command line
             console.log("rendering ", argv.url)
-            await render(argv.url, page)    
+            try {
+                console.log(` + Visiting ${url}`)
+                // https://playwright.dev/docs/api/class-page#pagesetdefaultnavigationtimeouttimeout
+                // https://playwright.dev/docs/api/class-page#pagegotourl-options
+                await page.goto(url, {timeout: 45000, waitUntil: 'networkidle'})
+                await render(argv.url, page)    
+            } catch (err) {
+                console.log(` * Unable to load ${url} within timeout of 45 sec, moving on`)
+                failedURLs.add(url)
+            }
         } else {
             yargs.showHelp();    
         }
