@@ -2,7 +2,7 @@
   "name": "crawl2pdf",
   "version": "1.0.0",
   "description": "Tool to crawl a website and render each page into a PDF",
-  "main": "index.js",
+  "main": "crawl2pdf.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -24,7 +24,6 @@
   "homepage": "https://github.com/heckj/crawl2pdf#readme",
   "dependencies": {
     "playwright": "^1.9.2",
-    "yards": "^0.1.4",
     "yargs": "^16.2.0"
   }
 }
