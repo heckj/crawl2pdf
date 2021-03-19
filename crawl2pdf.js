@@ -45,9 +45,15 @@ const crawl = async (url, page) => {
         // console.log(" - skipping ", parsedURL.href)
         return
     }
-    console.log(` + Visiting ${url}`)
-    await page.goto(url)
-    await page.waitForLoadState('networkidle');
+    try {
+        console.log(` + Visiting ${url}`)
+        // https://playwright.dev/docs/api/class-page#pagesetdefaultnavigationtimeouttimeout
+        // https://playwright.dev/docs/api/class-page#pagegotourl-options
+        await page.goto(url, {timeout: 45000, waitUntil: 'networkidle'})
+        // await page.waitForLoadState('networkidle');    
+    } catch (err) {
+        console.log(` * Unable to load ${url} within timeout of 45 sec, moving on`)
+    }
     // NOTE(heckj): Topic pages have a 'div.doc-topic' and within that a 'div.topictitle'
     if (argv.a) {
         // -a means only render the article pages - so let's check what we've got before
@@ -58,7 +64,7 @@ const crawl = async (url, page) => {
             // console.log(`innerText of element handle is >${pagetype}<`)
             if (pagetype == 'Article') {
                 await render(url, page) // renders the page into a local PDF file
-            }    
+            }
         }
     } else {
         // render everything
