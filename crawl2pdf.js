@@ -9,10 +9,12 @@ var startHost = ""
 var startPathname = ""
 const argv = yargs
 .scriptName("crawl2pdf")
-.command('render [-u]|[-f]', 'render the page into a PDF')
-.command('crawl [-u]', 'starting crawlinmg a site and rendering PDFs for each page')
+.command('render -u|-f', 'render the page into a PDF')
+.command('crawl [-a] -u', 'starting crawlinmg a site and rendering PDFs for each page')
 .alias('u', 'url')
 .describe('u', 'URL to load')
+.alias('a', 'articles')
+.describe('a', 'Only render articles into PDFs')
 .alias('f', 'file')
 .describe('f', 'file with URLS to load')
 .help()
@@ -23,8 +25,6 @@ const argv = yargs
 const render = async (url, page) => {
     // constrain the spidering to the URLs at the starting location or below...
     const parsedURL = new NODEURL.URL(url)
-    await page.goto(url)
-    await page.waitForLoadState('networkidle');
     const stringForFiles = parsedURL.pathname
         .replace(/\//g,'_') // translate all the / into _
         .replace(/_documentation_/i,'') // shorten up the file names a smidge
@@ -42,11 +42,28 @@ const crawl = async (url, page) => {
     // constrain the spidering to the URLs at the starting location or below...
     const parsedURL = new NODEURL.URL(url)
     if (!(parsedURL.host == startHost && parsedURL.pathname.startsWith(startPathname))) {
-        console.log(" - skipping ", parsedURL.href)
+        // console.log(" - skipping ", parsedURL.href)
         return
     }
     console.log(` + Visiting ${url}`)
-    await render(url, page) // renders the page into a local PDF file
+    await page.goto(url)
+    await page.waitForLoadState('networkidle');
+    // NOTE(heckj): Topic pages have a 'div.doc-topic' and within that a 'div.topictitle'
+    if (argv.a) {
+        // -a means only render the article pages - so let's check what we've got before
+        // calling render
+        const elementHandle = await page.$('span.eyebrow')
+        if (elementHandle) {
+            const pagetype = await elementHandle.innerText()
+            // console.log(`innerText of element handle is >${pagetype}<`)
+            if (pagetype == 'Article') {
+                await render(url, page) // renders the page into a local PDF file
+            }    
+        }
+    } else {
+        // render everything
+        await render(url, page) // renders the page into a local PDF file
+    }
     const urls = await page.$$eval('a', (elements) =>
         elements.map((el) => el.href),
         // scrape all the page's a.href links into a list of urls
