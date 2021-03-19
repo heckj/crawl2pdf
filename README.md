@@ -18,11 +18,18 @@ To use:
 
     Commands:
      crawl2pdf render [-u]|[-f]  render the page into a PDF
-     crawl2pdf crawl [-u]        starting crawlinmg a site and rendering PDFs for
-                                each page
+     crawl2pdf crawl [-a] [-u]   starting crawlinmg a site and rendering PDFs for
+                                 each page
 
     Options:
-         --version  Show version number                                   [boolean]
-     -u, --url      URL to load
-     -f, --file     file with URLS to load
-     -h, --help     Show help                                             [boolean]
+         --version   Show version number                                  [boolean]
+     -u, --url       URL to load
+     -a, --articles  Only render articles into PDFs
+     -f, --file      file with URLS to load
+     -h, --help      Show help                                            [boolean]
+
+    Copyright 2021, thanks Playwright!
+
+## DEBUG MODE
+
+use `DEBUG=pw:api` before a command to generate Playwright debugging output
