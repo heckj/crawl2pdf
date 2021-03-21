@@ -11,7 +11,7 @@ var startPathname = ""
 const argv = yargs
 .scriptName("crawl2pdf")
 .command('render [-u]|[-f]', 'render the page into a PDF')
-.command('crawl [-a] [-u]', 'starting crawlinmg a site and rendering PDFs for each page')
+.command('crawl [-a] [-u]', 'start crawling a site and rendering PDFs for each page')
 .alias('u', 'url')
 .describe('u', 'URL to load')
 .alias('a', 'articles')
