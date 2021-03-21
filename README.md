@@ -18,7 +18,7 @@ To use:
 
     Commands:
      crawl2pdf render [-u]|[-f]  render the page into a PDF
-     crawl2pdf crawl [-a] [-u]   starting crawlinmg a site and rendering PDFs for
+     crawl2pdf crawl [-a] [-u]   starting crawling a site and rendering PDFs for
                                  each page
 
     Options:
