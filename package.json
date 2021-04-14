@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/heckj/crawl2pdf#readme",
   "dependencies": {
-    "playwright": "^1.9.2",
+    "playwright": "^1.10.0",
     "yargs": "^16.2.0"
   }
 }
