@@ -137,14 +137,14 @@ const crawl = async (url, page) => {
             // -u or --url option included - use the URL from the command line
             console.log("rendering ", argv.url)
             try {
-                console.log(` + Visiting ${url}`)
+                console.log(` + Visiting ${argv.url}`)
                 // https://playwright.dev/docs/api/class-page#pagesetdefaultnavigationtimeouttimeout
                 // https://playwright.dev/docs/api/class-page#pagegotourl-options
-                await page.goto(url, {timeout: 45000, waitUntil: 'networkidle'})
+                await page.goto(argv.url, {timeout: 45000, waitUntil: 'networkidle'})
                 await render(argv.url, page)    
             } catch (err) {
-                console.log(` * Unable to load ${url} within timeout of 45 sec, moving on`)
-                failedURLs.add(url)
+                console.log(` * Unable to load ${argv.url} within timeout of 45 sec, moving on`)
+                failedURLs.add(argv.url)
             }
         } else {
             yargs.showHelp();    
