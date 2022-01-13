@@ -3,6 +3,7 @@ const { chromium, webkit, devices } = require("playwright");
 const NODEURL = require('url');
 const yargs = require('yargs');
 const fs = require('fs');
+const userDataDir = '_cachedBrowserData';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const seenURLs = new Set()
@@ -13,6 +14,7 @@ const argv = yargs
 .scriptName("crawl2pdf")
 .command('render [-u]|[-f]', 'render the page into a PDF')
 .command('crawl [-a] [-u]', 'start crawling a site and rendering PDFs for each page')
+.command('setup [-u]', 'open a browser to set up cached state (auth/login)')
 .alias('u', 'url')
 .describe('u', 'URL to load')
 .alias('a', 'articles')
@@ -95,14 +97,29 @@ const crawl = async (url, page) => {
 
 (async () => {
     // console.log("argv is ",argv)
-    const browser = await chromium.launch();
+    // const browser = await chromium.launch();
     // const browser = await webkit.launch();
     // webkit doesn't have page.pdf, but chromium does...
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    if (argv._.includes('crawl')) {
+    if (argv._.includes('setup')) {
+        const context = await chromium.launchPersistentContext(userDataDir, { headless: false });
+        const page = await context.newPage();    
+        console.log('Connect to your authentication and log in. Quit the browser when done.')
+        if (argv.u) {
+            // -u or --url option included - use the URL from the command line
+            try {
+                console.log(` + Visiting ${argv.url}`)
+                // https://playwright.dev/docs/api/class-page#pagesetdefaultnavigationtimeouttimeout
+                // https://playwright.dev/docs/api/class-page#pagegotourl-options
+                await page.goto(argv.url, {timeout: 45000, waitUntil: 'networkidle'})
+            } catch (err) {
+                console.log(` * Unable to load ${argv.url} within timeout of 45 sec, moving on`)
+                failedURLs.add(argv.url)
+            }
+        }
+    } else if (argv._.includes('crawl')) {        
         if (argv.url) {
+            const context = await chromium.launchPersistentContext(userDataDir, { headless: false });
+            const page = await context.newPage();
             const startURL = new NODEURL.URL(argv.url)
             startHost = startURL.host
             startPathname = startURL.pathname
@@ -115,11 +132,15 @@ const crawl = async (url, page) => {
                 await crawl(tryAgainUrl, page)
             }
             console.log(`Checked ${seenURLs.size} URLs`)    
+            await browser.close();
         } else {
             yargs.showHelp()
         }
     } else if (argv._.includes('render')) {
         if (argv.f) {
+            const context = await chromium.launchPersistentContext(userDataDir, { headless: false });
+            const page = await context.newPage();
+
             // -f, or --file option included - open and read URLS from a file
             const data = fs.readFileSync(argv.f, 'utf8')
             // split data into lines - /r or /n as newline
@@ -139,7 +160,11 @@ const crawl = async (url, page) => {
                     }
                 }
             }
+            await browser.close();
         } else if (argv.u) {
+            const context = await chromium.launchPersistentContext(userDataDir, { headless: false });
+            const page = await context.newPage();
+
             // -u or --url option included - use the URL from the command line
             console.log("rendering ", argv.url)
             try {
@@ -152,12 +177,12 @@ const crawl = async (url, page) => {
                 console.log(` * Unable to load ${argv.url} within timeout of 45 sec, moving on`)
                 failedURLs.add(argv.url)
             }
+            await browser.close();
         } else {
             yargs.showHelp();    
         }
     } else {
         yargs.showHelp();
     }
-    await browser.close();
 
 })()
