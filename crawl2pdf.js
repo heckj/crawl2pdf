@@ -4,6 +4,7 @@ const NODEURL = require('url');
 const yargs = require('yargs');
 const fs = require('fs');
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const seenURLs = new Set()
 const failedURLs = new Set()
 var startHost = ""
@@ -71,6 +72,7 @@ const crawl = async (url, page) => {
         }
     } else {
         // render everything
+        await sleep(3000);
         await render(url, page) // renders the page into a local PDF file
     }
     const urls = await page.$$eval('a', (elements) =>
@@ -78,12 +80,16 @@ const crawl = async (url, page) => {
         // scrape all the page's a.href links into a list of urls
     )
     for await (const u of urls) {
-        // squish out the search, query, and hash variations of the URLS
-        var nextURL = new NODEURL.URL(u)
-        nextURL.search=null
-        nextURL.query=null
-        nextURL.hash=null
-        await crawl(nextURL.origin+nextURL.pathname, page)
+        // squish out the search, query, and hash variations of the UR
+        if (u != '') {
+            console.log(`  -- cleaning URL ${u}`)
+            var nextURL = new NODEURL.URL(u)
+            nextURL.search=null
+            nextURL.query=null
+            nextURL.hash=null
+            //console.log(`converting ${u} into ${nextURL.origin+nextURL.pathname}`)
+            await crawl(nextURL.origin+nextURL.pathname, page)    
+        }
     }
 }
 
